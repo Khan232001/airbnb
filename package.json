@@ -1,20 +1,27 @@
 {
-  "engines": {
-    "node": "14.1.0"
-  },
   "name": "delta_projects",
   "version": "1.0.0",
-  "description": "",
+  "description": "Airbnb-style MERN stack project",
   "main": "app.js",
   "scripts": {
     "start": "node app.js",
     "dev": "nodemon app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "mern",
+    "airbnb",
+    "express",
+    "mongodb",
+    "nodejs",
+    "ejs"
+  ],
+  "author": "Arafat Khan",
   "license": "ISC",
   "type": "commonjs",
+  "engines": {
+    "node": "18.x"
+  },
   "dependencies": {
     "@mapbox/mapbox-sdk": "^0.16.1",
     "cloudinary": "^1.41.3",
