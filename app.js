@@ -1,27 +1,18 @@
-require("dotenv").config(); // Load .env at the very top
+// Load env first
+require("dotenv").config();
 
-const express = require("express");
-const app = express();
-const mongoose = require("mongoose");
 const path = require("path");
+const express = require("express");
+const mongoose = require("mongoose");
 const methodOverride = require("method-override");
 const ejsMate = require("ejs-mate");
 const session = require("express-session");
-const MongoStore= require('connect-mongo');
+const MongoStore = require("connect-mongo");
 const passport = require("passport");
 const LocalStrategy = require("passport-local").Strategy;
 const flash = require("connect-flash");
 
-// Debug check
-console.log("Secret key loaded:", process.env.SECRET_KEY);
-
-// MongoDB URL
-const MONGO_URL = "mongodb://127.0.0.1:27017/wanderlust";
-
-// Utils
 const ExpressError = require("./utils/ExpressError.js");
-
-// Models
 const User = require("./models/user.js");
 
 // Routers
@@ -29,52 +20,68 @@ const listings = require("./routes/listing.js");
 const reviews = require("./routes/review.js");
 const userRouter = require("./routes/user.js");
 
-// ---- MongoDB Connection ----
-main()
+// ----- Config (Render/Prod friendly) -----
+const PORT = process.env.PORT || 8080;
+// Use a cloud DB (MongoDB Atlas) on Render. Set this in Render → Environment
+const DB_URL = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/wanderlust";
+const SESSION_SECRET = process.env.SECRET_KEY || "fallbacksecret";
+
+const app = express();
+
+// If behind a proxy (Render), trust it so secure cookies work correctly.
+app.set("trust proxy", 1);
+
+// ----- DB Connection -----
+mongoose
+  .connect(DB_URL)
   .then(() => console.log("✅ Connected to MongoDB"))
   .catch((err) => console.error("❌ MongoDB Connection Error:", err));
 
-async function main() {
-  await mongoose.connect(MONGO_URL);
-}
-
-// ---- View Engine & Middleware ----
+// ----- Views & Static -----
 app.engine("ejs", ejsMate);
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
-
-app.use(express.urlencoded({ extended: true }));
-app.use(methodOverride("_method"));
 app.use(express.static(path.join(__dirname, "public")));
 
-// ---- Session Configuration ----
-const sessionConfig = {
-  secret: process.env.SECRET_KEY || "fallbacksecret",
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    httpOnly: true,
-    expires: Date.now() + 1000 * 60 * 60 * 24 * 7, // 1 week
-    maxAge: 1000 * 60 * 60 * 24 * 7,
-  },
-};
-app.use(session(sessionConfig));
+// ----- Parsers & Helpers -----
+app.use(express.urlencoded({ extended: true }));
+app.use(methodOverride("_method"));
+
+// ----- Session Store (Mongo) -----
+const store = MongoStore.create({
+  mongoUrl: DB_URL,
+  touchAfter: 24 * 3600, // reduce session writes
+});
+
+store.on("error", (e) => {
+  console.error("SESSION STORE ERROR", e);
+});
+
+app.use(
+  session({
+    store,
+    name: "sid",
+    secret: SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      // secure: true,               // enable if you want cookies only over HTTPS
+      maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
+    },
+  })
+);
+
 app.use(flash());
 
-// ---- Passport Configuration ----
+// ----- Auth (Passport) -----
 app.use(passport.initialize());
 app.use(passport.session());
 passport.use(new LocalStrategy(User.authenticate()));
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
-// ---- Logged-in User Debug ----
-app.use((req, res, next) => {
-  console.log("Logged in user:", req.user);
-  next();
-});
-
-// ---- Global Template Variables ----
+// ----- Globals for templates -----
 app.use((req, res, next) => {
   res.locals.user = req.user;
   res.locals.success = req.flash("success");
@@ -82,43 +89,41 @@ app.use((req, res, next) => {
   next();
 });
 
-// ---- Routes ----
+// ----- Routes -----
 app.use("/listings", listings);
 app.use("/listings/:id/reviews", reviews);
 app.use("/", userRouter);
 
-// ---- Root Route ----
-app.get("/", (req, res) => {
-  res.send("Home Page Working!");
-});
+// Make the live site show the actual app:
+app.get("/", (req, res) => res.redirect("/listings"));
 
-// ---- Demo User Route ----
+// Demo user route (unchanged)
 app.get("/demouser", async (req, res) => {
   try {
-    let demouser = new User({
-      email: "demouser@example.com",
-      username: "demouser",
-    });
-    let registeredUser = await User.register(demouser, "password");
+    const demouser = new User({ email: "demouser@example.com", username: "demouser" });
+    const registeredUser = await User.register(demouser, "password");
     res.send(registeredUser);
   } catch (e) {
     res.send(e.message);
   }
 });
 
-// ---- 404 Handler ----
-app.all("*", (req, res, next) => {
-  next(new ExpressError("Page Not Found", 404));
-});
+// 404
+app.all("*", (req, res, next) => next(new ExpressError("Page Not Found", 404)));
 
-// ---- Error Handler ----
+// Error handler
 app.use((err, req, res, next) => {
-  const { statusCode = 500 } = err;
-  if (!err.message) err.message = "Something went wrong!";
-  res.status(statusCode).render("error.ejs", { statusCode, message: err.message });
+  const statusCode = err.statusCode || 500;
+  const message = err.message || "Something went wrong!";
+  // If you have views/error.ejs it will render; otherwise send JSON as fallback
+  try {
+    return res.status(statusCode).render("error.ejs", { statusCode, message });
+  } catch {
+    return res.status(statusCode).json({ statusCode, message });
+  }
 });
 
-// ---- Start Server ----
-app.listen(8080, () => {
-  console.log("🚀 Server running on port 8080");
+// Start server
+app.listen(PORT, "0.0.0.0", () => {
+  console.log(`🚀 Server running on port ${PORT}`);
 });
