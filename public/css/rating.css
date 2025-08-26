@@ -1,0 +1,56 @@
+/* rating.css */
+
+.review-container {
+  max-width: 600px;
+  margin: 50px auto;
+  padding: 25px;
+  background-color: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.review-container h2 {
+  text-align: center;
+  color: #333;
+  margin-bottom: 20px;
+}
+
+.review-container label {
+  display: block;
+  font-weight: 600;
+  margin: 15px 0 8px;
+  color: #444;
+}
+
+.review-container textarea {
+  width: 100%;
+  padding: 10px;
+  font-size: 1rem;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  resize: vertical;
+  transition: border 0.3s ease;
+}
+
+.review-container textarea:focus {
+  border-color: #007bff;
+  outline: none;
+}
+
+.review-container button {
+  margin-top: 20px;
+  padding: 10px 20px;
+  font-size: 1rem;
+  font-weight: 600;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.review-container button:hover {
+  background-color: #0056b3;
+}

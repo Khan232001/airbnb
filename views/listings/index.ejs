@@ -1,0 +1,67 @@
+<% layout('listings/layouts/boilerplate') %>
+
+<style>
+  .filters {
+    display: flex;
+    overflow-x: auto;
+    gap: 2rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid #ccc;
+    margin-bottom: 1rem;
+  }
+
+  .filter {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 80px;
+    font-size: 0.85rem;
+    color: #444;
+    cursor: pointer;
+  }
+
+  .filter i {
+    font-size: 1.2rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .filter.active {
+    border-bottom: 2px solid #ff385c;
+    color: #ff385c;
+    font-weight: 500;
+  }
+</style>
+
+<div class="container">
+  <!-- 🌍 Category Filters -->
+  <div class="filters">
+    <div class="filter active"><i class="fa-solid fa-fire"></i>Trending</div>
+    <div class="filter"><i class="fa-solid fa-bed"></i>Rooms</div>
+    <div class="filter"><i class="fa-solid fa-city"></i>Iconic Cities</div>
+    <div class="filter"><i class="fa-solid fa-mountain"></i>Mountains</div>
+    <div class="filter"><i class="fa-solid fa-chess-rook"></i>Castles</div>
+    <div class="filter"><i class="fa-solid fa-person-swimming"></i>Amazing Pools</div>
+    <div class="filter"><i class="fa-solid fa-campground"></i>Camping</div>
+    <div class="filter"><i class="fa-solid fa-tractor"></i>Farms</div>
+    <div class="filter"><i class="fa-solid fa-snowflake"></i>Arctic</div>
+  </div>
+
+  <!-- 🏠 Listing Cards -->
+  <div class="row row-cols-lg-3 row-cols-md-3 row-cols-sm-1 m-3">
+    <% for (let listing of listings) { %>
+      <a href="/listings/<%= listing._id %>" class="listing-link">
+        <div class="card">
+          <img src="<%= listing.image && listing.image.url ? listing.image.url : '/images/placeholder.jpg' %>"
+               class="card-img-top" alt="listing_image" style="height:20rem">
+          <div class="card-img-overlay"></div>
+          <div class="card-body">
+            <p class="card-text">
+              <b><%= listing.title %></b><br>
+<%= listing.price.toLocaleString("en-US", { style: "currency", currency: "USD" }) %>
+            </p>
+          </div>
+        </div>
+      </a>
+    <% } %>
+  </div>
+</div>
