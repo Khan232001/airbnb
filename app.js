@@ -1,4 +1,4 @@
-// Load env first
+// ----- Load env first -----
 require("dotenv").config();
 
 const path = require("path");
@@ -9,7 +9,7 @@ const ejsMate = require("ejs-mate");
 const session = require("express-session");
 const MongoStore = require("connect-mongo");
 const passport = require("passport");
-const LocalStrategy = require("passport-local").Strategy;
+const LocalStrategy = require("passport-local");
 const flash = require("connect-flash");
 
 const ExpressError = require("./utils/ExpressError.js");
@@ -22,19 +22,18 @@ const userRouter = require("./routes/user.js");
 
 // ----- Config (Render/Prod friendly) -----
 const PORT = process.env.PORT || 8080;
-// Use a cloud DB (MongoDB Atlas) on Render. Set this in Render → Environment
-const DB_URL = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/wanderlust";
+const DB_URL = process.env.MONGO_URL || "mongodb://127.0.0.1:27017/wanderlust";
 const SESSION_SECRET = process.env.SECRET_KEY || "fallbacksecret";
 
 const app = express();
 
-// If behind a proxy (Render), trust it so secure cookies work correctly.
+// If behind a proxy (Render/Heroku), trust it so secure cookies work
 app.set("trust proxy", 1);
 
 // ----- DB Connection -----
 mongoose
   .connect(DB_URL)
-  .then(() => console.log("✅ Connected to MongoDB"))
+  .then(() => console.log("✅ Connected to MongoDB Atlas"))
   .catch((err) => console.error("❌ MongoDB Connection Error:", err));
 
 // ----- Views & Static -----
@@ -47,10 +46,11 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride("_method"));
 
-// ----- Session Store (Mongo) -----
+// ----- Session Store (Mongo Atlas) -----
 const store = MongoStore.create({
   mongoUrl: DB_URL,
-  touchAfter: 24 * 3600, // reduce session writes
+  crypto: { secret: SESSION_SECRET },
+  touchAfter: 24 * 3600, // reduces write ops
 });
 
 store.on("error", (e) => {
@@ -60,13 +60,13 @@ store.on("error", (e) => {
 app.use(
   session({
     store,
-    name: "sid",
+    name: "session_id",
     secret: SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: {
       httpOnly: true,
-      // secure: true,               // enable if you want cookies only over HTTPS
+      secure: process.env.NODE_ENV === "production", // only over HTTPS in prod
       maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
     },
   })
@@ -94,13 +94,16 @@ app.use("/listings", listings);
 app.use("/listings/:id/reviews", reviews);
 app.use("/", userRouter);
 
-// Make the live site show the actual app:
+// Root → show listings instead of "Home Page Working!"
 app.get("/", (req, res) => res.redirect("/listings"));
 
-// Demo user route (unchanged)
+// Demo user route
 app.get("/demouser", async (req, res) => {
   try {
-    const demouser = new User({ email: "demouser@example.com", username: "demouser" });
+    const demouser = new User({
+      email: "demouser@example.com",
+      username: "demouser",
+    });
     const registeredUser = await User.register(demouser, "password");
     res.send(registeredUser);
   } catch (e) {
@@ -108,14 +111,15 @@ app.get("/demouser", async (req, res) => {
   }
 });
 
-// 404
-app.all("*", (req, res, next) => next(new ExpressError("Page Not Found", 404)));
+// ----- 404 -----
+app.all("*", (req, res, next) => {
+  next(new ExpressError("Page Not Found", 404));
+});
 
-// Error handler
+// ----- Error handler -----
 app.use((err, req, res, next) => {
   const statusCode = err.statusCode || 500;
   const message = err.message || "Something went wrong!";
-  // If you have views/error.ejs it will render; otherwise send JSON as fallback
   try {
     return res.status(statusCode).render("error.ejs", { statusCode, message });
   } catch {
@@ -123,7 +127,7 @@ app.use((err, req, res, next) => {
   }
 });
 
-// Start server
+// ----- Start Server -----
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
