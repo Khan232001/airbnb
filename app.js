@@ -88,14 +88,21 @@ app.use((req, res, next) => {
   res.locals.error = req.flash("error");
   next();
 });
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "loader.html"));
+});
 
+app.get("/api/status", (req, res) => {
+  res.set("Cache-Control", "no-store");
+  res.json({ status: "awake" });
+});
 // ----- Routes -----
 app.use("/listings", listings);
 app.use("/listings/:id/reviews", reviews);
 app.use("/", userRouter);
 
 // Root → show listings instead of "Home Page Working!"
-app.get("/", (req, res) => res.redirect("/listings"));
+// app.get("/", (req, res) => res.redirect("/listings"));
 
 // Demo user route
 app.get("/demouser", async (req, res) => {

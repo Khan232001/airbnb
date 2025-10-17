@@ -2,30 +2,32 @@ const Listing = require("../models/listing");
 const Review = require("../models/review");
 const mbxGeocoding = require('@mapbox/mapbox-sdk/services/geocoding');
 const mapToken = process.env.MAP_TOKEN;
-const baseClient = mbxGeocoding({ accessToken: mapToken });
-const geocodingClient = baseClient.geocoding;
+
+const geocodingClient = mbxGeocoding({ accessToken: mapToken });
+
 module.exports.index = async (req, res) => {
   const allListings = await Listing.find();
   res.render("listings/index", { listings: allListings });
 };
 
 module.exports.renderNewForm = (req, res) => {
-  res.render("listings/new.ejs");
+  res.render("listings/new.ejs");   // ✅ correct template for new listing form
 };
 
 module.exports.createListing = async (req, res) => {
-   let response = await geocodingClient.forwardGeocode({
-        query: req.body.listing.location,
-        limit: 4,
-    })
-    .send()
-    console.log(response);
-    res.send("done!");
-    // .then(response => {
-    //     const match = response.body;
-    // });
+  // Geocoding location (optional)
+  let response = await geocodingClient.forwardGeocode({
+    query: req.body.listing.location,
+    limit: 1,
+  }).send();
+
+  console.log(response.body.features[0].geometry); // debug
+
   const newListing = new Listing(req.body.listing);
+  // Save geometry to the listing if needed
+  newListing.geometry = response.body.features[0].geometry;
   await newListing.save();
+
   req.flash("success", "Successfully created a new listing!");
   res.redirect(`/listings/${newListing._id}`);
 };
@@ -37,7 +39,10 @@ module.exports.showListing = async (req, res) => {
     req.flash("error", "Listing not found!");
     return res.redirect("/listings");
   }
-  res.render("listings/show.ejs", { listing });
+  res.render("listings/show.ejs", {
+    listing,
+    mapToken: process.env.MAP_TOKEN   // ✅ pass token to EJS
+  });
 };
 
 module.exports.renderEditForm = async (req, res) => {
