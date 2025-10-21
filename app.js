@@ -11,7 +11,10 @@ const MongoStore = require("connect-mongo");
 const passport = require("passport");
 const LocalStrategy = require("passport-local");
 const flash = require("connect-flash");
+const axios = require("axios");
+const cron = require("node-cron");
 
+// Models & Utils
 const ExpressError = require("./utils/ExpressError.js");
 const User = require("./models/user.js");
 
@@ -19,6 +22,7 @@ const User = require("./models/user.js");
 const listings = require("./routes/listing.js");
 const reviews = require("./routes/review.js");
 const userRouter = require("./routes/user.js");
+const bookings = require("./routes/booking.js");
 
 // ----- Config (Render/Prod friendly) -----
 const PORT = process.env.PORT || 8080;
@@ -81,13 +85,15 @@ passport.use(new LocalStrategy(User.authenticate()));
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());
 
-// ----- Globals for templates (safe currentUser) -----
+// ----- Globals for templates -----
 app.use((req, res, next) => {
-  res.locals.currentUser = req.user || null; // always defined
+  res.locals.currentUser = req.user || null;
   res.locals.success = req.flash("success");
   res.locals.error = req.flash("error");
   next();
 });
+
+// ----- Loader page -----
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "loader.html"));
 });
@@ -96,15 +102,20 @@ app.get("/api/status", (req, res) => {
   res.set("Cache-Control", "no-store");
   res.json({ status: "awake" });
 });
+
 // ----- Routes -----
 app.use("/listings", listings);
 app.use("/listings/:id/reviews", reviews);
 app.use("/", userRouter);
+app.use("/bookings", bookings);
 
-// Root → show listings instead of "Home Page Working!"
-// app.get("/", (req, res) => res.redirect("/listings"));
+// ----- Static pages -----
+app.get("/privacy", (req, res) => res.render("static/privacy"));
+app.get("/terms", (req, res) => res.render("static/terms"));
+app.get("/contact", (req, res) => res.render("static/contact"));
+app.get("/about", (req, res) => res.render("static/about"));
 
-// Demo user route
+// ----- Demo user route -----
 app.get("/demouser", async (req, res) => {
   try {
     const demouser = new User({
@@ -131,6 +142,17 @@ app.use((err, req, res, next) => {
     return res.status(statusCode).render("error.ejs", { statusCode, message });
   } catch {
     return res.status(statusCode).json({ statusCode, message });
+  }
+});
+
+// ----- Render keep-alive ping -----
+const RENDER_URL = "https://airbnb-bmo0.onrender.com";
+cron.schedule("*/14 * * * *", async () => {
+  try {
+    const res = await axios.get(RENDER_URL + "/api/status");
+    console.log("Ping success:", res.data);
+  } catch (err) {
+    console.log("Ping failed:", err.message);
   }
 });
 

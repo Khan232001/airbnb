@@ -35,6 +35,11 @@ const listingSchema = new Schema({
       required: true,
     },
   },
+  isDeleted: {
+  type: Boolean,
+  default: false,
+},
+
   // category:{
   //   type: String,
   //   enum: ["apartment", "house", "cottage", "villa", "hotel"],

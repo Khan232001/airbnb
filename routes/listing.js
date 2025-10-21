@@ -56,7 +56,33 @@ router
     validateListing,
     wrapAsync(listingController.updateListing)
   )
-  .delete(isLoggedIn, wrapAsync(listingController.deleteListing));
+  // ✅ Soft Delete instead of permanent delete
+  // .delete(isLoggedIn, async (req, res) => {
+  //   const { id } = req.params;
+  //   const listing = await Listing.findByIdAndUpdate(id, { isDeleted: true });
+  //   if (!listing) {
+  //     req.flash("error", "Listing not found!");
+  //     return res.redirect("/listings");
+  //   }
+  //   req.flash("success", "Listing deleted successfully!");
+  //   res.redirect("/listings");
+  // });
+.delete(isLoggedIn, async (req, res) => {
+  const { id } = req.params;
+  const listing = await Listing.findById(id);
+  if (!listing) {
+    req.flash("error", "Listing not found!");
+    return res.redirect("/listings");
+  }
+
+  listing.isDeleted = true;
+  await listing.save();
+
+  // req.flash("success", "Listing moved to Trash!");
+  // res.redirect("/listings");
+  req.flash("info", "This listing is deleted. You can restore it below!");
+  res.redirect(`/listings/${id}`);
+});
 
 router.get("/:id/edit", isLoggedIn, wrapAsync(listingController.renderEditForm));
 
@@ -80,5 +106,29 @@ router.delete(
   isLoggedIn,
   wrapAsync(reviewController.deleteReview)
 );
+
+// // ✅ RESTORE DELETED LISTING (works with POST)
+// router.post("/:id/restore", isLoggedIn, async (req, res) => {
+//   const { id } = req.params;
+//   const listing = await Listing.findById(id);
+
+//   if (!listing) {
+//     req.flash("error", "Listing not found!");
+//     return res.redirect("/listings");
+//   }
+
+//   listing.isDeleted = false;
+//   await listing.save();
+
+//   req.flash("success", "Listing restored successfully!");
+//   res.redirect("/listings");
+// });
+// ✅ RESTORE DELETED LISTING (clean version)
+router.post("/:id/restore", isLoggedIn, wrapAsync(listingController.restoreListing));
+router.get("/:id/trash", isLoggedIn, async (req, res) => {
+  const deletedListings = await Listing.find({ isDeleted: true });
+  res.render("listings/trash.ejs", { listings: deletedListings });
+});
+
 
 module.exports = router;

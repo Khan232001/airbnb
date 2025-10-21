@@ -1,0 +1,48 @@
+<% layout('listings/layouts/boilerplate') %>
+
+<div class="container mt-4">
+  <h2 class="mb-4">My Bookings</h2>
+
+  <% if (bookings.length === 0) { %>
+    <div class="alert alert-info">
+      You haven't made any bookings yet.
+    </div>
+    <a href="/listings" class="btn btn-success">Browse Listings</a>
+  <% } else { %>
+    <div class="row row-cols-lg-3 row-cols-md-2 row-cols-sm-1 g-4">
+      <% bookings.forEach(booking => { %>
+        <div class="col">
+          <div class="card shadow-sm">
+            <img
+              src="<%= booking.listing?.image?.url || '/images/placeholder.jpg' %>"
+              class="card-img-top"
+              alt="Listing Image"
+              style="height: 200px; object-fit: cover;"
+            />
+            <div class="card-body">
+              <h5 class="card-title"><%= booking.listing?.title || 'Unknown Listing' %></h5>
+              <p class="card-text text-muted mb-1">
+                Check-in: <b><%= booking.checkIn.toDateString() %></b><br>
+                Check-out: <b><%= booking.checkOut.toDateString() %></b><br>
+                Guests: <%= booking.guests %>
+              </p>
+              <p class="fw-bold text-success">
+                Total: $
+                <%= ((booking.checkOut - booking.checkIn) / (1000 * 60 * 60 * 24)) * booking.listing.price %>
+              </p>
+              <a href="/listings/<%= booking.listing._id %>" class="btn btn-outline-primary w-100">
+                View Listing
+              </a>
+              <form action="/bookings/<%= booking._id %>?_method=DELETE" method="POST" class="mt-2">
+  <button type="submit" class="btn btn-outline-danger w-100">
+    <i class="fa-solid fa-trash-can"></i> Cancel Booking
+  </button>
+</form>
+
+            </div>
+          </div>
+        </div>
+      <% }); %>
+    </div>
+  <% } %>
+</div>

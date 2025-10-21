@@ -40,35 +40,42 @@ body {
   padding: 1rem 0;
 }
 
-.f-info-socials,
-.f-info-brand,
-.f-info-links {
-  margin: 0.25rem 0;
+/* ── FOOTER LINKS & ICON HOVER EFFECT ── */
+.f-info-socials a {
+  color: #222;
+  text-decoration: none;
+  transition: color 0.3s ease, transform 0.2s ease;
+}
+
+.f-info-socials a:hover {
+  color: #ff385c; /* Airbnb pink-red */
+  transform: scale(1.2); /* 🔥 small hover zoom */
 }
 
 .f-info-socials i {
-  font-size: 1.3rem;
+  font-size: 1.4rem;
   margin: 0 0.4rem;
-  color: #222;
-  transition: color 0.3s;
-}
-.f-info-socials i:hover {
-  color: #0077b5;
 }
 
+/* footer text + brand */
 .f-info-brand {
   font-size: 0.95rem;
   font-weight: 500;
   color: #222;
+  margin-top: 0.5rem;
 }
 
+/* footer bottom links */
 .f-info-links a {
   color: #222;
   margin: 0 0.4rem;
   font-size: 0.9rem;
   text-decoration: none;
+  transition: color 0.3s ease;
 }
+
 .f-info-links a:hover {
+  color: #ff385c;
   text-decoration: underline;
 }
 
@@ -77,14 +84,17 @@ body {
   border: none !important;
   margin-bottom: 2rem;
 }
+
 .card-img-top {
   border-radius: 1rem !important;
   width: 100% !important;
   object-fit: cover !important;
 }
+
 .card-body {
   padding: 0 !important;
 }
+
 .card-text p {
   font-weight: 400;
 }
@@ -93,18 +103,24 @@ body {
 .listing-link {
   text-decoration: none;
 }
+
 .card-img-overlay {
   opacity: 0;
 }
+
 .card-img-overlay:hover {
   opacity: 0.2;
   background-color: white;
 }
+
+/* ── LIST DETAIL STYLES ── */
 .show-ul {
   list-style-type: disc;
   padding-left: 1.25rem;
 }
-#map{
-  height:400px;
-  width:800px;
+
+/* ── MAP STYLING ── */
+#map {
+  height: 400px;
+  width: 800px;
 }
